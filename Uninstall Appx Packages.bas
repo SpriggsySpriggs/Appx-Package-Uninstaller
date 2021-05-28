@@ -1,3 +1,5 @@
+'$Console
+'_Console On
 $If 32BIT Then
     $ERROR Requires 64 Bit to run this code
 $End If
@@ -43,8 +45,14 @@ Sub __UI_Click (id As Long)
         Case UninstallBT
             appName$ = GetItem$(ListBox1, appid%)
             If appName$ <> "" Then
-                Shell _Hide "PowerShell -NoProfile -ExecutionPolicy Bypass -Command " + Chr$(34) + "& {Start-Process PowerShell -ArgumentList 'Get-AppxPackage " + appName$ + " | Remove-AppxPackage'}" + Chr$(34)
-                RemoveItem ListBox1, appid%
+                Dim As Long exit_code
+                Dim As String stdout, stderr
+                exit_code = pipecom("PowerShell Get-AppxPackage " + appName$ + " ^| Remove-AppxPackage", stdout, stderr)
+                If exit_code = 0 Then
+                    Answer = MessageBox("The appx package was uninstalled successfully", "Success", MsgBox_OkOnly)
+                Else
+                    Answer = MessageBox(stderr, "Error", MsgBox_OkOnly + MsgBox_Exclamation)
+                End If
             End If
             UpdateList
         Case ListBox1
@@ -130,7 +138,8 @@ Sub __UI_FormResized
 End Sub
 
 Sub UpdateList
-    app$ = pipecom_lite("PowerShell $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8';Get-AppxPackage ^| Select Name ^| Sort-Object ^| ForEach-Object {$_.Name}")
+    ResetList ListBox1
+    app$ = pipecom_lite("PowerShell $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8';Get-AppxPackage ^| Select Name ^| ForEach-Object {$_.Name} ^| Sort-Object")
     Text(ListBox1) = app$
 End Sub
 '$INCLUDE:'pipecomqb64.bas'
