@@ -15,6 +15,10 @@ Dim Shared ListBox1 As Long
 Dim Shared UninstallBT As Long
 Dim Shared appid%
 
+Declare Dynamic Library "Shell32"
+    Sub ShellExecute Alias "ShellExecuteA" (ByVal hwnd As _Offset, lpOperation As String, lpFile As String, lpParameters As String, lpDirectory As String, Byval nShowCmd As Integer)
+End Declare
+
 '$INCLUDE:'InForm\InForm.ui'
 '$INCLUDE:'InForm\xp.uitheme'
 '$INCLUDE:'Uninstall Appx Packages.frm'
@@ -25,6 +29,13 @@ Sub __UI_BeforeInit
 End Sub
 
 Sub __UI_OnLoad
+    Dim As String cmd
+    cmd = ">nul 2>&1 " + Chr$(34) + "%SYSTEMROOT%\system32\cacls.exe" + Chr$(34) + " " + Chr$(34) + "%SYSTEMROOT%\system32\config\system" + Chr$(34)
+    errorlevel = _ShellHide(cmd)
+    If errorlevel <> 0 Then
+        ShellExecute 0, "runas" + Chr$(0), Command$(0) + Chr$(0), "", "", 5
+        System
+    End If
     UpdateList
 End Sub
 
@@ -47,7 +58,7 @@ Sub __UI_Click (id As Long)
             If appName$ <> "" Then
                 Dim As Long exit_code
                 Dim As String stdout, stderr
-                exit_code = pipecom("PowerShell Get-AppxPackage " + appName$ + " ^| Remove-AppxPackage", stdout, stderr)
+                exit_code = pipecom("PowerShell Get-AppxPackage -AllUsers " + appName$ + " ^| Remove-AppxPackage", stdout, stderr)
                 If exit_code = 0 Then
                     Answer = MessageBox("The appx package was uninstalled successfully", "Success", MsgBox_OkOnly)
                 Else
